@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block title %}Admin Dashboard{% endblock %}
+
+{% block content %}
+<h1>Admin Dashboard</h1>
+<p>Welcome to the admin control panel.</p>
+<div class="row">
+    <div class="col-md-3">
+        <div class="card text-white bg-primary mb-3">
+            <div class="card-body">
+                <h5 class="card-title">User Management</h5>
+                <a href="{{ url_for('admin.users') }}" class="btn btn-light">Manage Users</a>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-white bg-success mb-3">
+            <div class="card-body">
+                <h5 class="card-title">Academic Structure</h5>
+                <a href="{{ url_for('admin.classes') }}" class="btn btn-light">Manage Classes</a>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-white bg-info mb-3">
+            <div class="card-body">
+                <h5 class="card-title">Syllabus</h5>
+                <a href="{{ url_for('admin.syllabus') }}" class="btn btn-light">Manage Syllabus</a>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-white bg-warning mb-3">
+            <div class="card-body">
+                <h5 class="card-title">Assignments</h5>
+                <a href="{{ url_for('admin.assignments') }}" class="btn btn-light">View Assignments</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

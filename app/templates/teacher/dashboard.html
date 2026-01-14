@@ -1,0 +1,109 @@
+{% extends "base.html" %}
+{% block title %}Teacher Dashboard{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">My Subjects</h1>
+</div>
+
+<div class="row">
+    {% for subject in subjects %}
+    <div class="col-md-6 mb-4">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <div>
+                    <h5 class="mb-0">{{ subject.name }}</h5>
+                    <small class="text-muted">{{ subject.class_name }} - {{ subject.section_name or subject.group_name }}</small>
+                </div>
+                <span class="badge bg-primary rounded-pill">{{ subject.progress }}%</span>
+            </div>
+            <div class="card-body">
+                <div class="progress mb-3" style="height: 10px;">
+                    <div class="progress-bar" role="progressbar" style="width: {{ subject.progress }}%;" aria-valuenow="{{ subject.progress }}" aria-valuemin="0" aria-valuemax="100"></div>
+                </div>
+                <div class="accordion" id="accordion-{{ subject.id }}">
+                    {% for chapter in subject.chapters %}
+                    <div class="accordion-item">
+                        <h2 class="accordion-header" id="heading-{{ chapter.id }}">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-{{ chapter.id }}">
+                                {{ chapter.name }}
+                                <span class="badge bg-secondary ms-2">{{ chapter.completed_topics }}/{{ chapter.total_topics }}</span>
+                            </button>
+                        </h2>
+                        <div id="collapse-{{ chapter.id }}" class="accordion-collapse collapse" data-bs-parent="#accordion-{{ subject.id }}">
+                            <div class="accordion-body">
+                                <ul class="list-group list-group-flush">
+                                    {% for topic in chapter.topics %}
+                                    <li class="list-group-item d-flex justify-content-between align-items-center px-0">
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" id="topic-{{ topic.id }}" 
+                                                {% if topic.is_completed %}checked{% endif %}
+                                                onchange="updateTopic({{ topic.id }}, this.checked)">
+                                            <label class="form-check-label" for="topic-{{ topic.id }}">
+                                                {{ topic.name }}
+                                            </label>
+                                        </div>
+                                        {% if topic.is_completed %}
+                                            <small class="text-muted">{{ topic.completion_date }}</small>
+                                        {% endif %}
+                                    </li>
+                                    {% endfor %}
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+    const csrftoken = getCookie('csrf_token');
+
+    function updateTopic(topicId, isCompleted) {
+        fetch(`/api/topic/${topicId}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrftoken
+            },
+            body: JSON.stringify({ is_completed: isCompleted })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                console.log('Topic updated successfully');
+                location.reload(); // Simple way to refresh progress bars
+            } else {
+                console.error('Error updating topic:', data.message);
+                alert('Error: ' + data.message);
+                document.getElementById(`topic-${topicId}`).checked = !isCompleted;
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('An unexpected error occurred.');
+            document.getElementById(`topic-${topicId}`).checked = !isCompleted;
+        });
+    }
+</script>
+{% endblock %}

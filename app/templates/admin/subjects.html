@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}Manage Subjects{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">Manage Subjects</h1>
+    <a href="{{ url_for('admin.create_subject') }}" class="btn btn-primary">Create New Subject</a>
+</div>
+<div class="table-responsive">
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>Subject Name</th>
+                <th>Class</th>
+                <th>Chapters</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for subject in all_subjects %}
+            <tr>
+                <td>{{ subject.name }}</td>
+                <td>{{ subject.class_obj.name }}</td>
+                <td>{{ subject.chapters | length }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

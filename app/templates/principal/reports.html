@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% block title %}Reports{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">Detailed Reports</h1>
+    <div>
+        <a href="{{ url_for('principal.download_pdf', class_id=selected_class) }}" class="btn btn-danger me-2">Download PDF</a>
+        <a href="{{ url_for('principal.download_excel', class_id=selected_class) }}" class="btn btn-success">Download Excel</a>
+    </div>
+</div>
+
+<form method="GET" action="{{ url_for('principal.reports') }}" class="row g-3 mb-4">
+    <div class="col-auto">
+        <label for="class_id" class="visually-hidden">Class</label>
+        <select name="class_id" id="class_id" class="form-select">
+            <option value="">All Classes</option>
+            {% for cls in classes %}
+                <option value="{{ cls.id }}" {% if selected_class == cls.id %}selected{% endif %}>{{ cls.name }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    <div class="col-auto">
+        <button type="submit" class="btn btn-primary mb-3">Filter</button>
+    </div>
+</form>
+
+<div class="table-responsive">
+    <table class="table table-striped table-hover">
+        <thead class="table-dark">
+            <tr>
+                <th>Teacher Name</th>
+                <th>Class</th>
+                <th>Subject</th>
+                <th>Completed Topics</th>
+                <th>Total Topics</th>
+                <th>Progress</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for report in reports %}
+            <tr>
+                <td>{{ report.teacher_name }}</td>
+                <td>{{ report.class_name }}</td>
+                <td>{{ report.subject_name }}</td>
+                <td>{{ report.completed_topics }}</td>
+                <td>{{ report.total_topics }}</td>
+                <td>
+                    <div class="progress" style="height: 20px;">
+                        <div class="progress-bar" role="progressbar" style="width: {{ report.progress }}%;" aria-valuenow="{{ report.progress }}" aria-valuemin="0" aria-valuemax="100">{{ report.progress }}%</div>
+                    </div>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

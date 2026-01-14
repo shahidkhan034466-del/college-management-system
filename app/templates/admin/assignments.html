@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block title %}Teacher Assignments{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">Teacher Assignments</h1>
+    <a href="{{ url_for('admin.create_assignment') }}" class="btn btn-primary">Assign Teacher to Class & Subject</a>
+</div>
+<div class="table-responsive">
+    <table class="table table-striped table-hover">
+        <thead>
+            <tr>
+                <th>Teacher</th>
+                <th>Class</th>
+                <th>Section</th>
+                <th>Group</th>
+                <th>Subject</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for assign in assignments %}
+            <tr>
+                <td>{{ assign.teacher_name }}</td>
+                <td>{{ assign.class_name }}</td>
+                <td>{{ assign.section_name or '-' }}</td>
+                <td>{{ assign.group_name or '-' }}</td>
+                <td>{{ assign.subject_name }}</td>
+                <td>
+                    <form method="POST" action="{{ url_for('admin.delete_assignment', id=assign.assignment_id) }}" style="display: inline;" onsubmit="return confirm('Are you sure you want to delete this assignment?');">
+                        <button type="submit" class="btn btn-sm btn-danger">Delete</button>
+                    </form>
+                </td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="6" class="text-center text-muted">No assignments found. <a href="{{ url_for('admin.create_assignment') }}">Create one now</a>.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

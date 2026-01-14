@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h3>{{ title }}</h3>
+            </div>
+            <div class="card-body">
+                <form method="POST" action="">
+                    {{ form.hidden_tag() }}
+                    <div class="mb-3">
+                        {{ form.teacher_id.label(class="form-label") }}
+                        {{ form.teacher_id(class="form-select") }}
+                    </div>
+                    <div class="mb-3">
+                        {{ form.class_id.label(class="form-label") }}
+                        {{ form.class_id(class="form-select", id="class-select") }}
+                    </div>
+                    <div class="mb-3" id="section-group-container">
+                        <!-- Sections/Groups will be loaded here by JS -->
+                    </div>
+                    <div class="mb-3">
+                        {{ form.subject_id.label(class="form-label") }}
+                        {{ form.subject_id(class="form-select", id="subject-select") }}
+                    </div>
+                    <div class="d-grid">
+                        {{ form.submit(class="btn btn-success") }}
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const classSelect = document.getElementById('class-select');
+    const sectionGroupContainer = document.getElementById('section-group-container');
+    const subjectSelect = document.getElementById('subject-select');
+
+    function updateDependentFields() {
+        const classId = classSelect.value;
+        
+        // Fetch sections and groups
+        fetch(`/admin/api/sections-for-class/${classId}`)
+            .then(response => response.json())
+            .then(sections => {
+                fetch(`/admin/api/groups-for-class/${classId}`)
+                    .then(response => response.json())
+                    .then(groups => {
+                        let html = '';
+                        if (sections.length > 0) {
+                            html += `<label for="section_id" class="form-label">Section</label>`;
+                            html += `<select name="section_id" class="form-select mb-3"><option value="">Select Section</option>`;
+                            sections.forEach(s => html += `<option value="${s.id}">${s.name}</option>`);
+                            html += `</select>`;
+                        }
+                        if (groups.length > 0) {
+                            html += `<label for="group_id" class="form-label">Group</label>`;
+                            html += `<select name="group_id" class="form-select mb-3"><option value="">Select Group</option>`;
+                            groups.forEach(g => html += `<option value="${g.id}">${g.name}</option>`);
+                            html += `</select>`;
+                        }
+                        sectionGroupContainer.innerHTML = html;
+                    });
+            });
+
+        // Fetch subjects
+        fetch(`/admin/api/subjects-for-class/${classId}`)
+            .then(response => response.json())
+            .then(subjects => {
+                console.log('Fetched subjects:', subjects); // Added for debugging
+                let html = `<option value="">Select Subject</option>`;
+                subjects.forEach(s => html += `<option value="${s.id}">${s.name}</option>`);
+                subjectSelect.innerHTML = html;
+            });
+    }
+
+    classSelect.addEventListener('change', updateDependentFields);
+    updateDependentFields(); // Initial load
+});
+</script>
+{% endblock %}

@@ -1,0 +1,114 @@
+{% extends "base.html" %}
+{% block title %}Principal Dashboard{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">Principal Dashboard</h1>
+    <div>
+        <a href="{{ url_for('principal.reports') }}" class="btn btn-primary">View Reports</a>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-4 mb-4">
+        <div class="card text-center">
+            <div class="card-body">
+                <h5 class="card-title">Overall College Progress</h5>
+                <h2 class="text-primary">{{ overall_progress }}%</h2>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-6 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5>Class-wise Progress</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="classProgressChart"></canvas>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5>Subject-wise Progress</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="subjectProgressChart"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    const classCtx = document.getElementById('classProgressChart').getContext('2d');
+    const classProgressChart = new Chart(classCtx, {
+        type: 'bar',
+        data: {
+            labels: {{ class_progress | map(attribute='name') | list | tojson }},
+            datasets: [{
+                label: 'Progress %',
+                data: {{ class_progress | map(attribute='progress') | list | tojson }},
+                backgroundColor: 'rgba(54, 162, 235, 0.6)',
+                borderColor: 'rgba(54, 162, 235, 1)',
+                borderWidth: 1
+            }]
+        },
+        options: {
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    max: 100
+                }
+            }
+        }
+    });
+
+    const subjectCtx = document.getElementById('subjectProgressChart').getContext('2d');
+    const subjectProgressChart = new Chart(subjectCtx, {
+        type: 'pie',
+        data: {
+            labels: {{ subject_progress | map(attribute='name') | list | tojson }},
+            datasets: [{
+                label: 'Progress %',
+                data: {{ subject_progress | map(attribute='progress') | list | tojson }},
+                backgroundColor: [
+                    'rgba(255, 99, 132, 0.6)',
+                    'rgba(54, 162, 235, 0.6)',
+                    'rgba(255, 206, 86, 0.6)',
+                    'rgba(75, 192, 192, 0.6)',
+                    'rgba(153, 102, 255, 0.6)',
+                    'rgba(255, 159, 64, 0.6)'
+                ],
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: {
+                    position: 'top',
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            let label = context.label || '';
+                            if (label) {
+                                label += ': ';
+                            }
+                            if (context.parsed !== null) {
+                                label += context.parsed + '%';
+                            }
+                            return label;
+                        }
+                    }
+                }
+            }
+        }
+    });
+</script>
+{% endblock %}

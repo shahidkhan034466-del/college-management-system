@@ -1,0 +1,22 @@
+# Core Framework
+Flask
+
+# Database
+Flask-SQLAlchemy
+Flask-Migrate
+
+# Authentication & Forms
+Flask-Login
+Flask-WTF
+email-validator
+
+# Email
+Flask-Mail
+
+# Production Web Server
+gunicorn
+
+# Report Generation
+reportlab
+pandas
+openpyxl

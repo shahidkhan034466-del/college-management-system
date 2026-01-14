@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}Manage Classes{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">Manage Classes</h1>
+    <a href="{{ url_for('admin.create_class') }}" class="btn btn-primary">Create New Class</a>
+</div>
+<div class="row">
+    {% for class in all_classes %}
+    <div class="col-md-4">
+        <div class="card mb-3">
+            <div class="card-body">
+                <h5 class="card-title">{{ class.name }}</h5>
+                <p class="card-text">
+                    Sections: {{ class.sections | length }}<br>
+                    Groups: {{ class.groups | length }}<br>
+                    Subjects: {{ class.subjects | length }}
+                </p>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}
