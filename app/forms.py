@@ -45,10 +45,19 @@ class TopicForm(FlaskForm):
     chapter_id = SelectField('Chapter', coerce=int, validators=[DataRequired()])
     submit = SubmitField('Save Topic')
 
+def coerce_int_or_none(value):
+    """Coerce value to int or None if empty/None"""
+    if value is None or value == '':
+        return None
+    try:
+        return int(value)
+    except (ValueError, TypeError):
+        return None
+
 class AssignmentForm(FlaskForm):
     teacher_id = SelectField('Teacher', coerce=int, validators=[DataRequired()])
     class_id = SelectField('Class', coerce=int, validators=[DataRequired()])
-    section_id = SelectField('Section', coerce=int)
-    group_id = SelectField('Group', coerce=int)
     subject_id = SelectField('Subject', coerce=int, validators=[DataRequired()])
+    section_id = SelectField('Section', coerce=coerce_int_or_none)
+    group_id = SelectField('Group', coerce=coerce_int_or_none)
     submit = SubmitField('Assign Teacher')
