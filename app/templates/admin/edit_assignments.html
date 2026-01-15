@@ -27,7 +27,7 @@
                         {{ form.subject_id(class="form-select", id="subject-select") }}
                     </div>
                     <div class="d-grid">
-                        {{ form.submit(class="btn btn-success") }}
+                        {{ form.submit(class="btn btn-success", id="submit-btn") }}
                     </div>
                 </form>
             </div>
@@ -83,6 +83,45 @@ document.addEventListener('DOMContentLoaded', function() {
 
     classSelect.addEventListener('change', updateDependentFields);
     updateDependentFields(); // Initial load
+
+    // Prevent double-submission and validate form
+    const form = document.querySelector('form');
+    const submitBtn = document.getElementById('submit-btn');
+    let isSubmitting = false;
+
+    form.addEventListener('submit', function(e) {
+        // Prevent multiple submissions
+        if (isSubmitting) {
+            console.log('Form already submitting, preventing duplicate submission');
+            e.preventDefault();
+            return false;
+        }
+        
+        // Validate that only ONE subject is selected
+        const subjectSelect = document.getElementById('subject-select');
+        const selectedSubject = subjectSelect.value;
+        
+        if (!selectedSubject || selectedSubject === '') {
+            alert('Please select a subject before submitting.');
+            e.preventDefault();
+            return false;
+        }
+        
+        console.log('Form submitting with subject ID:', selectedSubject);
+        console.log('Teacher ID:', form.querySelector('[name="teacher_id"]').value);
+        console.log('Class ID:', form.querySelector('[name="class_id"]').value);
+        
+        isSubmitting = true;
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Assigning...';
+        
+        // Prevent form from being submitted again
+        setTimeout(function() {
+            if (isSubmitting) {
+                console.log('Form submission in progress, preventing additional submissions');
+            }
+        }, 100);
+    });
 });
 </script>
 {% endblock %}

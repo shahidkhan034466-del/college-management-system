@@ -4,7 +4,7 @@ from app import db
 from app.models import User, Class, Section, Group, Subject, Chapter, Topic, teacher_assignments
 from app.forms import UserForm, ClassForm, SubjectForm, ChapterForm, TopicForm, AssignmentForm
 from app.utils import role_required
-from sqlalchemy import or_
+from sqlalchemy import or_, func
 
 bp = Blueprint('admin', __name__)
 
@@ -21,6 +21,158 @@ def dashboard():
 def users():
     users = User.query.all()
     return render_template('admin/users.html', users=users)
+
+@bp.route('/assignment/create', methods=['GET', 'POST'])
+@role_required('admin')
+@login_required
+def create_assignment():
+    import time
+    call_timestamp = time.time()
+    print("=" * 50)
+    print(f"create_assignment function called at {call_timestamp}")
+    print(f"Request method: {request.method}")
+    print("=" * 50)
+
+    form = AssignmentForm()
+    form.teacher_id.choices = [(t.id, t.full_name) for t in User.query.filter_by(role='teacher').order_by('full_name').all()]
+    form.class_id.choices = [(c.id, c.name) for c in Class.query.order_by('name').all()]
+
+    # Always set these choices BEFORE validate_on_submit!
+    class_id = form.class_id.data or request.form.get('class_id', type=int)
+    if class_id:
+        form.subject_id.choices = [(s.id, s.name) for s in Subject.query.filter_by(class_id=class_id).all()]
+        # Add None option for optional fields (using None instead of empty string)
+        form.section_id.choices = [(None, 'Select Section')] + [(s.id, s.name) for s in Section.query.filter_by(class_id=class_id).all()]
+        form.group_id.choices = [(None, 'Select Group')] + [(g.id, g.name) for g in Group.query.filter_by(class_id=class_id).all()]
+    else:
+        form.subject_id.choices = []
+        form.section_id.choices = [(None, 'Select Section')]
+        form.group_id.choices = [(None, 'Select Group')]
+
+    if request.method == 'POST':
+        print("Form errors:", form.errors)
+        print("Request.form:", request.form)
+        print("POST request received")
+        print("subject_id choices:", form.subject_id.choices)
+        print("subject_id submitted value:", request.form.get('subject_id'))
+        print("section_id choices:", form.section_id.choices)
+        print("section_id submitted value:", request.form.get('section_id'))
+        print("group_id choices:", form.group_id.choices)
+        print("group_id submitted value:", request.form.get('group_id'))
+        print("form.validate() result:", form.validate())
+        print("form.validate_on_submit() result:", form.validate_on_submit())
+
+    if form.validate_on_submit():
+        print("Form validation successful")
+        print("Creating assignment for:")
+        print(f"  Teacher ID: {form.teacher_id.data}")
+        print(f"  Class ID: {form.class_id.data}")
+        print(f"  Subject ID: {form.subject_id.data} (will be validated)")
+        print(f"  Section ID: {form.section_id.data}")
+        print(f"  Group ID: {form.group_id.data}")
+
+        # Validate that subject_id is actually selected (not None or empty)
+        if not form.subject_id.data:
+            flash('Please select a subject.', 'danger')
+            return render_template('admin/edit_assignments.html', form=form, title='Create Assignment')
+        
+        # Ensure subject_id is a single integer (not a list or multiple values)
+        subject_id = form.subject_id.data
+        if isinstance(subject_id, list):
+            flash('Please select only one subject.', 'danger')
+            return render_template('admin/edit_assignments.html', form=form, title='Create Assignment')
+        if not isinstance(subject_id, int):
+            try:
+                subject_id = int(subject_id)
+            except (ValueError, TypeError):
+                flash('Invalid subject selected.', 'danger')
+                return render_template('admin/edit_assignments.html', form=form, title='Create Assignment')
+        
+        print(f"Validated Subject ID: {subject_id} (single integer)")
+
+        # Get section_id and group_id from form (they're now properly coerced to None if empty)
+        section_id = form.section_id.data
+        group_id = form.group_id.data
+
+        # Check for existing assignment - EXACT match required
+        existing = db.session.execute(
+            db.select(teacher_assignments).where(
+                teacher_assignments.c.teacher_id == form.teacher_id.data,
+                teacher_assignments.c.class_id == form.class_id.data,
+                teacher_assignments.c.subject_id == subject_id,
+                teacher_assignments.c.section_id == section_id,
+                teacher_assignments.c.group_id == group_id
+            )
+        ).first()
+
+        if existing:
+            flash('This assignment already exists.', 'warning')
+            return redirect(url_for('admin.assignments'))
+        
+        # Count existing assignments BEFORE insert
+        count_before = db.session.execute(
+            db.select(func.count()).select_from(teacher_assignments)
+        ).scalar()
+        print(f"Assignments in database BEFORE insert: {count_before}")
+        
+        # Create ONLY ONE assignment - ensure we're using the validated subject_id
+        print("=" * 50)
+        print("INSERTING SINGLE ASSIGNMENT:")
+        print(f"  Teacher ID: {form.teacher_id.data}")
+        print(f"  Class ID: {form.class_id.data}")
+        print(f"  Subject ID: {subject_id} (SINGLE SUBJECT ONLY)")
+        print(f"  Section ID: {section_id}")
+        print(f"  Group ID: {group_id}")
+        print("=" * 50)
+        
+        # CRITICAL: Verify we're only inserting ONE record
+        # This is a SINGLE insert statement - it will only create ONE row
+        stmt = teacher_assignments.insert().values(
+            teacher_id=form.teacher_id.data,
+            class_id=form.class_id.data,
+            section_id=section_id,
+            group_id=group_id,
+            subject_id=subject_id  # SINGLE subject_id, not a loop
+        )
+        
+        try:
+            result = db.session.execute(stmt)
+            db.session.commit()
+            
+            # Verify only ONE row was inserted
+            inserted_id = result.lastrowid
+            count_after = db.session.execute(
+                db.select(func.count()).select_from(teacher_assignments)
+            ).scalar()
+            
+            print(f"Assignment inserted with ID: {inserted_id}")
+            print(f"Assignments in database AFTER insert: {count_after}")
+            print(f"Difference: {count_after - count_before} assignment(s) created")
+            
+            if count_after - count_before != 1:
+                print("=" * 50)
+                print("WARNING: More than ONE assignment was created!")
+                print("This should not happen - investigating...")
+                print("=" * 50)
+            else:
+                print("SUCCESS: Only ONE assignment created!")
+                print("=" * 50)
+            
+            flash('Teacher assigned successfully.', 'success')
+            return redirect(url_for('admin.assignments'))
+        except Exception as e:
+            print("=" * 50)
+            print("ERROR creating assignment:", str(e))
+            print("Form errors:", form.errors)
+            print("Request form data:", request.form)
+            print("=" * 50)
+            db.session.rollback()
+            flash(f'Error creating assignment: {str(e)}', 'danger')
+
+    return render_template('admin/edit_assignments.html', form=form, title='Create Assignment')
+
+
+
 
 @bp.route('/user/create', methods=['GET', 'POST'])
 @role_required('admin')
@@ -200,6 +352,19 @@ def create_topic():
 @login_required
 def assignments():
     # This is a complex query to get all assignments with IDs
+    print("=" * 50)
+    print("FETCHING ASSIGNMENTS FROM DATABASE...")
+    
+    # First, let's check what's actually in the database
+    all_assignments_raw = db.session.execute(
+        db.select(teacher_assignments)
+    ).all()
+    print(f"Raw assignments in database: {len(all_assignments_raw)}")
+    for row in all_assignments_raw:
+        print(f"  Assignment ID: {row.id}, Teacher: {row.teacher_id}, Class: {row.class_id}, Subject: {row.subject_id}, Section: {row.section_id}")
+    
+    # Now get the formatted assignments
+    # CRITICAL FIX: Start from teacher_assignments table to avoid cartesian product
     assigns = db.session.execute(
         db.select(
             teacher_assignments.c.id.label('assignment_id'),
@@ -208,13 +373,23 @@ def assignments():
             Section.name.label('section_name'),
             Group.name.label('group_name'),
             Subject.name.label('subject_name')
-        ).select_from(User).join(teacher_assignments).join(Class).join(Subject)
+        ).select_from(teacher_assignments)
+        .join(User, teacher_assignments.c.teacher_id == User.id)
+        .join(Class, teacher_assignments.c.class_id == Class.id)
+        .join(Subject, teacher_assignments.c.subject_id == Subject.id)  # This is the KEY - join on the actual subject_id in the assignment
         .join(Section, teacher_assignments.c.section_id == Section.id, isouter=True)
         .join(Group, teacher_assignments.c.group_id == Group.id, isouter=True)
         .order_by(Class.name, Subject.name, User.full_name)
     ).all()
+    
+    print(f"Formatted assignments returned: {len(assigns)}")
+    for assign in assigns:
+        print(f"  ID: {assign.assignment_id}, Teacher: {assign.teacher_name}, Class: {assign.class_name}, Subject: {assign.subject_name}")
+    print("=" * 50)
+    
     return render_template('admin/assignments.html', assignments=assigns)
 
+<<<<<<< HEAD
 @bp.route('/assignment/create', methods=['GET', 'POST'])
 @role_required('admin')
 @login_required
@@ -282,6 +457,8 @@ def create_assignment():
     print("Request form data on validation fail:", request.form) # Debugging line
 
 
+=======
+>>>>>>> d272804f59c5a5dc8c1761db6f211c7d14627af9
 @bp.route('/api/sections-for-class/<int:class_id>')
 def api_sections_for_class(class_id):
     sections = Section.query.filter_by(class_id=class_id).all()
@@ -301,12 +478,53 @@ def api_subjects_for_class(class_id):
 @role_required('admin')
 @login_required
 def delete_assignment(id):
+    print("=" * 50)
+    print(f"DELETE ASSIGNMENT REQUEST - ID: {id}")
+    
+    # Check what assignment we're about to delete
+    assignment_to_delete = db.session.execute(
+        db.select(teacher_assignments).where(teacher_assignments.c.id == id)
+    ).first()
+    
+    if assignment_to_delete:
+        print(f"Assignment to delete:")
+        print(f"  ID: {assignment_to_delete.id}")
+        print(f"  Teacher ID: {assignment_to_delete.teacher_id}")
+        print(f"  Class ID: {assignment_to_delete.class_id}")
+        print(f"  Subject ID: {assignment_to_delete.subject_id}")
+        print(f"  Section ID: {assignment_to_delete.section_id}")
+        print(f"  Group ID: {assignment_to_delete.group_id}")
+    else:
+        print("WARNING: Assignment with ID {id} not found!")
+    
+    # Count before delete
+    count_before = db.session.execute(
+        db.select(func.count()).select_from(teacher_assignments)
+    ).scalar()
+    print(f"Assignments BEFORE delete: {count_before}")
+    
     try:
         stmt = teacher_assignments.delete().where(teacher_assignments.c.id == id)
-        db.session.execute(stmt)
+        result = db.session.execute(stmt)
         db.session.commit()
+        
+        # Count after delete
+        count_after = db.session.execute(
+            db.select(func.count()).select_from(teacher_assignments)
+        ).scalar()
+        print(f"Assignments AFTER delete: {count_after}")
+        print(f"Difference: {count_before - count_after} assignment(s) deleted")
+        
+        if count_before - count_after != 1:
+            print("WARNING: More than ONE assignment was deleted!")
+        else:
+            print("SUCCESS: Only ONE assignment deleted!")
+        print("=" * 50)
+        
         flash('Assignment deleted successfully.', 'success')
     except Exception as e:
+        print(f"ERROR deleting assignment: {str(e)}")
+        print("=" * 50)
         db.session.rollback()
         flash(f'Error deleting assignment: {str(e)}', 'danger')
     return redirect(url_for('admin.assignments'))
