@@ -43,9 +43,9 @@ def create_user():
         user.set_password('defaultpassword') # Set a default password
         db.session.add(user)
         try:
-            db.session.commit()
-            flash(f'User {form.username.data} created with default password: defaultpassword', 'success')
-            return redirect(url_for('admin.users'))
+        db.session.commit()
+        flash(f'User {form.username.data} created with default password: defaultpassword', 'success')
+        return redirect(url_for('admin.users'))
         except Exception as e:
             db.session.rollback()
             flash(f'Error creating user: {str(e)}', 'danger')
@@ -77,9 +77,9 @@ def edit_user(id):
         user.full_name = form.full_name.data
         user.role = form.role.data
         try:
-            db.session.commit()
-            flash('User information updated.', 'success')
-            return redirect(url_for('admin.users'))
+        db.session.commit()
+        flash('User information updated.', 'success')
+        return redirect(url_for('admin.users'))
         except Exception as e:
             db.session.rollback()
             flash(f'Error updating user: {str(e)}', 'danger')
@@ -109,9 +109,9 @@ def create_class():
         new_class = Class(name=form.name.data)
         db.session.add(new_class)
         try:
-            db.session.commit()
-            flash(f'{form.name.data} created.', 'success')
-            return redirect(url_for('admin.classes'))
+        db.session.commit()
+        flash(f'{form.name.data} created.', 'success')
+        return redirect(url_for('admin.classes'))
         except Exception as e:
             db.session.rollback()
             flash(f'Error creating class: {str(e)}', 'danger')
@@ -136,9 +136,9 @@ def create_subject():
         new_subject = Subject(name=form.name.data, class_id=form.class_id.data)
         db.session.add(new_subject)
         try:
-            db.session.commit()
-            flash(f'Subject {form.name.data} created.', 'success')
-            return redirect(url_for('admin.subjects'))
+        db.session.commit()
+        flash(f'Subject {form.name.data} created.', 'success')
+        return redirect(url_for('admin.subjects'))
         except Exception as e:
             db.session.rollback()
             flash(f'Error creating subject: {str(e)}', 'danger')
@@ -164,9 +164,9 @@ def create_chapter():
         new_chapter = Chapter(name=form.name.data, subject_id=form.subject_id.data)
         db.session.add(new_chapter)
         try:
-            db.session.commit()
-            flash(f'Chapter {form.name.data} created.', 'success')
-            return redirect(url_for('admin.syllabus'))
+        db.session.commit()
+        flash(f'Chapter {form.name.data} created.', 'success')
+        return redirect(url_for('admin.syllabus'))
         except Exception as e:
             db.session.rollback()
             flash(f'Error creating chapter: {str(e)}', 'danger')
@@ -185,9 +185,9 @@ def create_topic():
         new_topic = Topic(name=form.name.data, chapter_id=form.chapter_id.data)
         db.session.add(new_topic)
         try:
-            db.session.commit()
-            flash(f'Topic {form.name.data} created.', 'success')
-            return redirect(url_for('admin.syllabus'))
+        db.session.commit()
+        flash(f'Topic {form.name.data} created.', 'success')
+        return redirect(url_for('admin.syllabus'))
         except Exception as e:
             db.session.rollback()
             flash(f'Error creating topic: {str(e)}', 'danger')
@@ -268,10 +268,10 @@ def create_assignment():
                 subject_id=form.subject_id.data
             )
             try:
-                db.session.execute(stmt)
-                db.session.commit()
-                flash('Teacher assigned successfully.', 'success')
-                return redirect(url_for('admin.assignments'))
+            db.session.execute(stmt)
+            db.session.commit()
+            flash('Teacher assigned successfully.', 'success')
+        return redirect(url_for('admin.assignments'))
             except Exception as e:
                 db.session.rollback()
                 flash(f'Error creating assignment: {str(e)}', 'danger')
